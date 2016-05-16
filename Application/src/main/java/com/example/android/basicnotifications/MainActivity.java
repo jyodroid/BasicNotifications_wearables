@@ -23,6 +23,7 @@ public class MainActivity extends Activity {
      * unique system-wide.
      */
     public static final int NOTIFICATION_ID = 1;
+    public static final String GROUP_NOTIFICATION_ID = "group_notification_id";
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -33,7 +34,7 @@ public class MainActivity extends Activity {
     /**
      * Send a sample notification using the NotificationCompat API.
      */
-    @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
+    @TargetApi(Build.VERSION_CODES.KITKAT)
     public void sendNotification(View view) {
 
         // BEGIN_INCLUDE(build_action)
@@ -93,7 +94,7 @@ public class MainActivity extends Activity {
         //Map Intent
         Intent mapIntent = new Intent(Intent.ACTION_VIEW);
         String location = "Medellin";
-        Uri geoUri = Uri.parse("geo:0,0?q="+Uri.encode(location));
+        Uri geoUri = Uri.parse("geo:0,0?q=" + Uri.encode(location));
         mapIntent.setData(geoUri);
 
         PendingIntent mapPendingIntent = PendingIntent.getActivity(this, 0, mapIntent, 0);
@@ -166,7 +167,8 @@ public class MainActivity extends Activity {
         // BEGIN_INCLUDE(send_notification)
 
         /**
-         * You can create several pages for notifications
+         * You can create several pages for notifications. Note that extra pages added never appear
+         * on the phone
          */
         //Create a big text style for second page of notification
         NotificationCompat.BigTextStyle secondPageTextStyle = new NotificationCompat.BigTextStyle();
@@ -187,6 +189,55 @@ public class MainActivity extends Activity {
                 NotificationManagerCompat.from(getApplicationContext());
         notificationManager.notify(NOTIFICATION_ID, builder.build());
         // END_INCLUDE(send_notification)
+
+        /**
+         * We can also create a stack of notifications when receive a lot of notification of the
+         * same group or app by sending with group Id
+         * Remember each notification still need to have unique notification id
+         */
+
+        String[] notificationMessages = {
+                "Is not time to work",
+                "Get ready for master's party"
+        };
+        String[] notificationTitles = {
+                "Vito Corleone",
+                "Mr A"
+        };
+        for (int i = 2; i <= 3; i++) {
+
+            int notificationIndex = i-2;
+            Notification stackNotification = new NotificationCompat.Builder(this)
+                    .setContentTitle("Notification from: " + notificationTitles[notificationIndex])
+                    .setContentText("content: " + notificationMessages[notificationIndex])
+                    .setSmallIcon(R.drawable.ic_stat_notification)
+                    .setGroup(GROUP_NOTIFICATION_ID)
+                    .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher))
+                    .build();
+
+            notificationManager.notify(i, stackNotification);
+        }
+
+        /**
+         * Use inbox style notification. Summarizes previous message group
+         */
+        Notification.Builder summaryNotificationBuilder = new Notification.Builder(this)
+                .setContentTitle("2 new messages")
+                .setSmallIcon(R.drawable.ic_stat_notification)
+                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher))
+                .setStyle(new Notification.InboxStyle()
+                        .addLine(notificationTitles[0] + "      " + notificationMessages[0])
+                        .addLine(notificationTitles[1] + "      " + notificationMessages[1])
+                        .setBigContentTitle("Two messages")
+                        .setSummaryText("jyo.onemail.com"));
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT_WATCH) {
+            summaryNotificationBuilder
+                    .setGroup(GROUP_NOTIFICATION_ID)
+                    .setGroupSummary(true);
+        }
+
+        notificationManager.notify(4, summaryNotificationBuilder.build());
 
         /**
          * Reply notification using voice commands
